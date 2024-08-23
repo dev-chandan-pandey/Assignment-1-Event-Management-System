@@ -1,7 +1,7 @@
 
 import axios from 'axios';
 
-const API_BASE_URL = 'https://assignment-1-event-management-system.onrender.com/';
+const API_BASE_URL = 'https://assignment-1-event-management-system.onrender.com/spi';
 
 // Function to register a new user
 export const registerUser = (data) => axios.post(`${API_BASE_URL}/auth/register`, data);
