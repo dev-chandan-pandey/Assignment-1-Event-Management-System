@@ -1,0 +1,30 @@
+mkdir -p controllers middlewares models routes utils config
+touch controllers/eventController.js controllers/authController.js
+touch middlewares/authMiddleware.js middlewares/errorMiddleware.js
+touch models/Event.js models/Session.js models/Participant.js models/User.js
+touch routes/eventRoutes.js routes/authRoutes.js
+touch utils/generateToken.js utils/pdfGenerator.js
+touch config/db.js config/dotenv.js
+touch index.js package.json
+
+
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
+
+exports.protect = async (req, res, next) => {
+    let token;
+
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+        try {
+            token = req.headers.authorization.split(' ')[1];
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+            req.user = await User.findById(decoded.id).select('-password');
+            next();
+        } catch (error) {
+            res.status(401).json({ message: 'Not authorized, token failed' });
+        }
+    } else {
+        res.status(401).json({ message: 'Not authorized, no token' });
+    }
+};
