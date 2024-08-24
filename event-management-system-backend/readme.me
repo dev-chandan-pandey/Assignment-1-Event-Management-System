@@ -28,3 +28,15 @@ exports.protect = async (req, res, next) => {
         res.status(401).json({ message: 'Not authorized, no token' });
     }
 };
+const express = require('express');
+const eventRoutes = require('./routes/event.routes');
+require('./config/db.config');
+
+const app = express();
+app.use(express.json());
+
+app.use('/api', eventRoutes);
+
+app.listen(3000, () => {
+    console.log('Server running on http://localhost:3000');
+});
