@@ -40,8 +40,7 @@ const EventDetails = () => {
             setError('Failed to download the report. Please try again later.');
         }
     };
-  
-    
+
     if (error) {
         return <Text color="red.500">{error}</Text>;
     }

@@ -139,31 +139,67 @@
 // };
 
 // module.exports = generatePDF;
+// const PDFDocument = require('pdfkit');
+
+// function PDFGenerator(event, res) {
+//     const doc = new PDFDocument();
+
+//     // Set response headers
+//     res.setHeader('Content-Type', 'application/pdf');
+//     res.setHeader('Content-Disposition', `attachment; filename="${event.name}_report.pdf"`);
+
+//     // Pipe the PDF document to the response
+//     doc.pipe(res);
+
+//     // Add event details to the PDF
+//     doc.fontSize(25).text(event.name, { align: 'center' });
+//     doc.fontSize(18).text(event.description, { align: 'left' });
+//     doc.text('Sessions:', { align: 'left' });
+
+//     event.sessions.forEach(session => {
+//         doc.fontSize(14).text(`- ${session.title}`);
+//         doc.text(`  Start: ${new Date(session.startTime).toLocaleString()}`);
+//         doc.text(`  End: ${new Date(session.endTime).toLocaleString()}`);
+//     });
+
+//     // Finalize the PDF and end the stream
+//     doc.end();
+// }
+
+// module.exports = PDFGenerator;
 const PDFDocument = require('pdfkit');
 
-function PDFGenerator(event, res) {
+function PDFGenerator(event) {
     const doc = new PDFDocument();
 
-    // Set response headers
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${event.name}_report.pdf"`);
+    // Add content to the PDF
+    doc.fontSize(25).text(`Event: ${event.name}`, { align: 'center' });
+    doc.moveDown();
+    doc.fontSize(18).text(`Description: ${event.description}`, { align: 'left' });
+    doc.moveDown();
+    doc.fontSize(18).text('Sessions:', { align: 'left' });
+    doc.moveDown();
 
-    // Pipe the PDF document to the response
-    doc.pipe(res);
+    event.sessions.forEach((session, index) => {
+        doc.fontSize(16).text(`${index + 1}. ${session.title}`, { underline: true });
+        doc.text(`Start Time: ${new Date(session.startTime).toLocaleString()}`);
+        doc.text(`End Time: ${new Date(session.endTime).toLocaleString()}`);
+        doc.moveDown();
 
-    // Add event details to the PDF
-    doc.fontSize(25).text(event.name, { align: 'center' });
-    doc.fontSize(18).text(event.description, { align: 'left' });
-    doc.text('Sessions:', { align: 'left' });
+        doc.fontSize(14).text('Participants:', { underline: true });
 
-    event.sessions.forEach(session => {
-        doc.fontSize(14).text(`- ${session.title}`);
-        doc.text(`  Start: ${new Date(session.startTime).toLocaleString()}`);
-        doc.text(`  End: ${new Date(session.endTime).toLocaleString()}`);
+        if (session.participants && session.participants.length > 0) {
+            session.participants.forEach((participant, pIndex) => {
+                doc.fontSize(12).text(`${pIndex + 1}. ${participant.name} (${participant.email})`);
+            });
+        } else {
+            doc.fontSize(12).text('No participants registered.');
+        }
+
+        doc.moveDown();
     });
 
-    // Finalize the PDF and end the stream
-    doc.end();
+    return doc;
 }
 
 module.exports = PDFGenerator;

@@ -52,16 +52,50 @@ exports.getEventById = async (req, res) => {
     }
 };
 
+// exports.getEventReport = async (req, res) => {
+//     try {
+//         const event = await Event.findById(req.params.id).populate('sessions.participants');
+//         if (!event) return res.status(404).json({ message: 'Event not found' });
+
+//         // Generate and stream the PDF to the client
+//         PDFGenerator(event, res);
+        
+//     } catch (error) {
+//         console.error('Error generating report:', error.message);
+//         res.status(500).json({ message: 'Server error', error: error.message });
+//     }
+// };
 exports.getEventReport = async (req, res) => {
     try {
         const event = await Event.findById(req.params.id).populate('sessions.participants');
         if (!event) return res.status(404).json({ message: 'Event not found' });
 
-        // Generate and stream the PDF to the client
-        PDFGenerator(event, res);
-        
+        const pdfDoc = PDFGenerator(event);
+
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${event.name}_report.pdf"`);
+
+        pdfDoc.pipe(res);
+        pdfDoc.end();
+
     } catch (error) {
         console.error('Error generating report:', error.message);
         res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+// controllers/eventController.js
+
+exports.deleteEvent = async (req, res) => {
+    try {
+        const event = await Event.findById(req.params.id);
+
+        if (!event) {
+            return res.status(404).json({ message: 'Event not found' });
+        }
+
+        await event.remove();
+        res.status(200).json({ message: 'Event removed' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error' });
     }
 };
