@@ -1,0 +1,165 @@
+const sessionSchema = new mongoose.Schema({
+    title: String,
+    startTime: Date,
+    endTime: Date,
+    participants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Participant' }],
+    speakers: [{ type: String }] // New field to include speakers
+});
+exports.createEvent = async (req, res) => {
+    const { name, description, sessions } = req.body;
+
+    try {
+        const event = new Event({
+            name,
+            description,
+            sessions // Include speakers as part of the session data
+        });
+
+        await event.save();
+        res.status(201).json(event);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+import React, { useState, useEffect } from 'react';
+import { Box, Button, FormControl, FormLabel, Input, Textarea, VStack, Heading } from '@chakra-ui/react';
+import { createEvent, fetchEventById, updateEvent } from '../services/api';
+import { useNavigate, useParams } from 'react-router-dom';
+
+const EventForm = ({ token, onSave }) => {
+    const { id } = useParams();
+    const [name, setName] = useState('');
+    const [description, setDescription] = useState('');
+    const [sessions, setSessions] = useState([{ title: '', startTime: '', endTime: '', speakers: [''] }]);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        if (id) {
+            const loadEvent = async () => {
+                try {
+                    const response = await fetchEventById(id, token);
+                    const { name, description, sessions } = response.data;
+                    setName(name);
+                    setDescription(description);
+                    setSessions(sessions);
+                } catch (error) {
+                    console.error('Error loading event:', error);
+                }
+            };
+            loadEvent();
+        }
+    }, [id, token]);
+
+    const handleSessionChange = (index, field, value) => {
+        const newSessions = [...sessions];
+        newSessions[index][field] = value;
+        setSessions(newSessions);
+    };
+
+    const handleSpeakerChange = (sessionIndex, speakerIndex, value) => {
+        const newSessions = [...sessions];
+        newSessions[sessionIndex].speakers[speakerIndex] = value;
+        setSessions(newSessions);
+    };
+
+    const addSpeaker = (sessionIndex) => {
+        const newSessions = [...sessions];
+        newSessions[sessionIndex].speakers.push('');
+        setSessions(newSessions);
+    };
+
+    const addSession = () => {
+        setSessions([...sessions, { title: '', startTime: '', endTime: '', speakers: [''] }]);
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            if (id) {
+                await updateEvent(id, { name, description, sessions }, token);
+            } else {
+                await createEvent({ name, description, sessions }, token);
+            }
+            onSave();
+            navigate('/');  // Redirect to home page after saving
+        } catch (error) {
+            console.error('Error saving event:', error);
+            alert('Failed to save event. Please try again.');
+        }
+    };
+
+    return (
+        <Box as="form" onSubmit={handleSubmit} p={4} borderRadius="md" boxShadow="md">
+            <VStack spacing={4} align="stretch">
+                <Heading size="md">{id ? 'Edit Event' : 'Create Event'}</Heading>
+                <FormControl>
+                    <FormLabel>Event Name</FormLabel>
+                    <Input type="text" value={name} onChange={(e) => setName(e.target.value)} required />
+                </FormControl>
+                <FormControl>
+                    <FormLabel>Description</FormLabel>
+                    <Textarea value={description} onChange={(e) => setDescription(e.target.value)} required />
+                </FormControl>
+                <VStack spacing={2} align="stretch">
+                    <Heading size="sm">Sessions</Heading>
+                    {sessions.map((session, index) => (
+                        <Box key={index} p={2} border="1px solid #e2e8f0" borderRadius="md">
+                            <FormControl>
+                                <FormLabel>Session Title</FormLabel>
+                                <Input
+                                    type="text"
+                                    placeholder="Session Title"
+                                    value={session.title}
+                                    onChange={(e) => handleSessionChange(index, 'title', e.target.value)}
+                                    required
+                                />
+                            </FormControl>
+                            <FormControl>
+                                <FormLabel>Start Time</FormLabel>
+                                <Input
+                                    type="datetime-local"
+                                    value={session.startTime}
+                                    onChange={(e) => handleSessionChange(index, 'startTime', e.target.value)}
+                                    required
+                                />
+                            </FormControl>
+                            <FormControl>
+                                <FormLabel>End Time</FormLabel>
+                                <Input
+                                    type="datetime-local"
+                                    value={session.endTime}
+                                    onChange={(e) => handleSessionChange(index, 'endTime', e.target.value)}
+                                    required
+                                />
+                            </FormControl>
+                            <FormControl>
+                                <FormLabel>Speakers</FormLabel>
+                                {session.speakers.map((speaker, sIndex) => (
+                                    <Input
+                                        key={sIndex}
+                                        type="text"
+                                        placeholder="Speaker Name"
+                                        value={speaker}
+                                        onChange={(e) => handleSpeakerChange(index, sIndex, e.target.value)}
+                                        required
+                                    />
+                                ))}
+                                <Button onClick={() => addSpeaker(index)} colorScheme="teal" variant="outline" mt={2}>
+                                    Add Speaker
+                                </Button>
+                            </FormControl>
+                        </Box>
+                    ))}
+                    <Button onClick={addSession} colorScheme="teal" variant="outline">
+                        Add Session
+                    </Button>
+                </VStack>
+                <Button type="submit" colorScheme="teal" width="full">
+                    {id ? 'Update Event' : 'Create Event'}
+                </Button>
+            </VStack>
+        </Box>
+    );
+};
+
+export default EventForm;
