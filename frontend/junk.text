@@ -163,3 +163,41 @@ const EventForm = ({ token, onSave }) => {
 };
 
 export default EventForm;
+const handleSubmit = async (e) => {
+        e.preventDefault();
+        setIsLoading(true);
+        try {
+            if (id) {
+                await updateEvent(id, { name, description, sessions }, token);
+                toast({
+                    title: "Event updated.",
+                    description: "The event has been successfully updated.",
+                    status: "success",
+                    duration: 3000,
+                    isClosable: true,
+                });
+            } else {
+                await createEvent({ name, description, sessions }, token);
+                toast({
+                    title: "Event created.",
+                    description: "The event has been successfully created.",
+                    status: "success",
+                    duration: 3000,
+                    isClosable: true,
+                });
+            }
+            onSave();
+            navigate('/');
+        } catch (error) {
+            console.error('Error saving event:', error);
+            toast({
+                title: "Error",
+                description: "Failed to save event. Please try again.",
+                status: "error",
+                duration: 3000,
+                isClosable: true,
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
